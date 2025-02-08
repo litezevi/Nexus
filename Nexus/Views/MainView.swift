@@ -14,7 +14,6 @@ struct MainView: View {
         NavigationView {
             VStack {
                 // Верхняя панель
-                // Верхняя панель
                 HStack(spacing: 16) {
                     HStack(spacing: 8) {
                         Image(systemName: "flame.fill")
@@ -24,7 +23,7 @@ struct MainView: View {
                     }
                     
                     Capsule()
-                        .fill(isPremium ? LinearGradient(gradient: Gradient(colors: [.yellow, .orange]), startPoint: .leading, endPoint: .trailing) : LinearGradient(gradient: Gradient(colors: [.gray, .black]), startPoint: .leading, endPoint: .trailing))
+                        .fill(isPremium ? Color.yellow : Color.gray)
                         .frame(width: 80, height: 24)
                         .overlay(
                             Text(isPremium ? "PRO" : "FREE")
@@ -52,12 +51,10 @@ struct MainView: View {
                 
                 // Кнопка "Начать урок"
                 ZStack {
-                    // Progress ring background
                     Circle()
                         .stroke(Color.gray.opacity(0.3), lineWidth: 6)
                         .frame(width: 140, height: 140)
                     
-                    // Progress ring
                     Circle()
                         .trim(from: 0, to: 0.75)
                         .stroke(
@@ -66,15 +63,11 @@ struct MainView: View {
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             ),
-                            style: StrokeStyle(
-                                lineWidth: 6,
-                                lineCap: .round
-                            )
+                            style: StrokeStyle(lineWidth: 6, lineCap: .round)
                         )
                         .frame(width: 140, height: 140)
                         .rotationEffect(.degrees(-90))
                     
-                    // Main button
                     NavigationLink(destination: LessonView()) {
                         ZStack {
                             Circle()
@@ -100,18 +93,12 @@ struct MainView: View {
                             }
                             .foregroundColor(.white)
                         }
-                        .scaleEffect(1.0)
-                        .animation(
-                            Animation.easeInOut(duration: 1.2)
-                                .repeatForever(autoreverses: true),
-                            value: 1.0
-                        )
                     }
                 }
                 
                 Spacer()
             }
-            .navigationBarHidden(true) // Скрываем NavigationBar для минималистичного вида
+            .navigationBarHidden(true)
         }
     }
 }
