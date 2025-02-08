@@ -11,7 +11,7 @@ import SwiftUI
 struct NexusApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            MainView()
         }
     }
 }

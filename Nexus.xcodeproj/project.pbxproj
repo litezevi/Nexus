@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		D58425272D58017F009D9DCB /* Nexus.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Nexus.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D58425272D58017F009D9DCB /* Nexus.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = Nexus.app; path = "/Users/litezevin/Desktop/Life's projects/Nexus/build/Debug-iphoneos/Nexus.app"; sourceTree = "<absolute>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -33,16 +33,7 @@
 			isa = PBXGroup;
 			children = (
 				D58425292D58017F009D9DCB /* Nexus */,
-				D58425282D58017F009D9DCB /* Products */,
 			);
-			sourceTree = "<group>";
-		};
-		D58425282D58017F009D9DCB /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				D58425272D58017F009D9DCB /* Nexus.app */,
-			);
-			name = Products;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -95,7 +86,7 @@
 			mainGroup = D584251E2D58017F009D9DCB;
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
-			productRefGroup = D58425282D58017F009D9DCB /* Products */;
+			productRefGroup = D584251E2D58017F009D9DCB;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
