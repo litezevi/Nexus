@@ -1,11 +1,11 @@
-//
+import SwiftUI
+import UIKit
+
 //  LessonView.swift
 //  NexusApp
 //
 //  Экран, где мы просим ИИ сгенерировать задания в формате JSON и парсим их.
 //
-
-import SwiftUI
 
 struct LessonView: View {
     
@@ -46,9 +46,6 @@ struct LessonView: View {
             ProgressView("Генерирую задания...")
                 .font(.headline)
                 .padding()
-            
-            LottieView(name: "loading", loopMode: .loop)
-                .frame(width: 200, height: 200)
         }
     }
     
