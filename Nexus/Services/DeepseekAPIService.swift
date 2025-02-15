@@ -24,16 +24,29 @@ struct DeepseekChatRequest: Codable {
 
 /// Ответ от DeepSeek API
 struct DeepseekCompletionResponse: Codable {
+    let id: String
+    let object: String
+    let created: Int
+    let model: String
     let choices: [DeepseekChoice]
+    let usage: DeepseekUsage
 }
 
 struct DeepseekChoice: Codable {
+    let index: Int
     let message: DeepseekMessage
+    let finish_reason: String
 }
 
 struct DeepseekMessage: Codable {
     let role: String
     let content: String
+}
+
+struct DeepseekUsage: Codable {
+    let prompt_tokens: Int
+    let completion_tokens: Int
+    let total_tokens: Int
 }
 
 // MARK: - DeepseekAPIService
@@ -49,13 +62,13 @@ class DeepseekAPIService {
     ///   - messages: Массив сообщений в чате
     ///   - completion: Возвращает результат: либо .success(ответ-строка), либо .failure(ошибка)
     static func fetchChatCompletion(
-        apiKey: String = "sk-4c88de14212c478abb0b641e280c4d6d",
-        baseURL: String = "https://api.deepseek.com",
+        apiKey: String,
+        baseURL: String = "https://api.deepseek.com/v1",
         model: String = "deepseek-chat",
         messages: [DeepseekChatMessage],
         completion: @escaping (Result<String, Error>) -> Void
     ) {
-        guard let url = URL(string: "\(baseURL)/v3/chat/completions") else {
+        guard let url = URL(string: "\(baseURL)/chat/completions") else {
             let urlError = NSError(domain: "DeepSeekAPI", code: 0, userInfo: [NSLocalizedDescriptionKey: "Неверный baseURL"])
             completion(.failure(urlError))
             return
@@ -67,6 +80,8 @@ class DeepseekAPIService {
         // Устанавливаем заголовки
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("2023-11-01", forHTTPHeaderField: "Deepseek-Version")
+        request.setValue("2023-11-01", forHTTPHeaderField: "Deepseek-Version")
         
         // Формируем тело запроса
         let requestBody = DeepseekChatRequest(
