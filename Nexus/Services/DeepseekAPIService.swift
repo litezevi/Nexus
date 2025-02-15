@@ -7,130 +7,180 @@
 
 import Foundation
 
-// MARK: - Структуры для запроса/ответа
-
-/// Сообщение для Chat Completion
-struct DeepseekChatMessage: Codable {
-    let role: String    // "system" | "user" | "assistant"
-    let content: String
+/// Пример задания для формата JSON
+private let EXAMPLE_TASK = """
+{
+  "tasks": [
+    {
+      "type": "translation",
+      "text": "The sun is shining today.",
+      "answer": "Сегодня светит солнце."
+    },
+    {
+      "type": "matchingPairs",
+      "pairs": [
+        ["apple", "яблоко"],
+        ["book", "книга"],
+        ["cat", "кошка"],
+        ["dog", "собака"]
+      ]
+    },
+    {
+      "type": "sentenceBuilding",
+      "words": ["she", "likes", "to", "read", "books"],
+      "answer": "She likes to read books."
+    },
+    {
+      "type": "multipleChoice",
+      "question": "He is drinking coffee.",
+      "options": [
+        "Он пьёт кофе.",
+        "Он пьёт чай.",
+        "Он ест завтрак.",
+        "Он читает газету."
+      ],
+      "answer": "Он пьёт кофе."
+    }
+  ]
 }
-
-/// Тело запроса POST /chat/completions
-struct DeepseekChatRequest: Codable {
-    let model: String
-    let messages: [DeepseekChatMessage]
-    let stream: Bool?
-}
-
-/// Ответ от DeepSeek API
-struct DeepseekCompletionResponse: Codable {
-    let id: String
-    let object: String
-    let created: Int
-    let model: String
-    let choices: [DeepseekChoice]
-    let usage: DeepseekUsage
-}
-
-struct DeepseekChoice: Codable {
-    let index: Int
-    let message: DeepseekMessage
-    let finish_reason: String
-}
-
-struct DeepseekMessage: Codable {
-    let role: String
-    let content: String
-}
-
-struct DeepseekUsage: Codable {
-    let prompt_tokens: Int
-    let completion_tokens: Int
-    let total_tokens: Int
-}
-
-// MARK: - DeepseekAPIService
+"""
 
 class DeepseekAPIService {
     
-    /// Запрашивает Chat Completion у DeepSeek API
-    ///
-    /// - Parameters:
-    ///   - apiKey: API-ключ DeepSeek (формат "Bearer sk-...")
-    ///   - baseURL: URL API (по умолчанию "https://api.deepseek.com")
-    ///   - model: Название модели (по умолчанию "deepseek-chat")
-    ///   - messages: Массив сообщений в чате
-    ///   - completion: Возвращает результат: либо .success(ответ-строка), либо .failure(ошибка)
-    static func fetchChatCompletion(
-        apiKey: String,
-        baseURL: String = "https://api.deepseek.com/v1",
-        model: String = "deepseek-chat",
-        messages: [DeepseekChatMessage],
-        completion: @escaping (Result<String, Error>) -> Void
-    ) {
-        guard let url = URL(string: "\(baseURL)/chat/completions") else {
-            let urlError = NSError(domain: "DeepSeekAPI", code: 0, userInfo: [NSLocalizedDescriptionKey: "Неверный baseURL"])
-            completion(.failure(urlError))
+    /// Запрашивает задания у DeepSeek API
+    func fetchLessonTasks(completion: @escaping ([DeepseekTask]?) -> Void) {
+        let systemPrompt = "Создай точно такие же задания как в примере, только с другими фразами:\n\n\(EXAMPLE_TASK)"
+        
+        let messages: [[String: String]] = [
+            ["role": "system", "content": systemPrompt],
+            ["role": "user", "content": "Создай новые задания точно в таком же формате как в примере."]
+        ]
+        
+        let requestBody: [String: Any] = [
+            "model": "deepseek-chat",
+            "messages": messages,
+            "stream": false
+        ]
+        
+        guard let url = URL(string: "https://api.deepseek.com/v1/chat/completions") else {
+            print("Error: Invalid URL")
+            completion(nil)
             return
         }
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        
-        // Устанавливаем заголовки
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("Bearer sk-4c88de14212c478abb0b641e280c4d6d", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("2023-11-01", forHTTPHeaderField: "Deepseek-Version")
-        request.setValue("2023-11-01", forHTTPHeaderField: "Deepseek-Version")
-        
-        // Формируем тело запроса
-        let requestBody = DeepseekChatRequest(
-            model: model,
-            messages: messages,
-            stream: false
-        )
         
         do {
-            let jsonData = try JSONEncoder().encode(requestBody)
-            request.httpBody = jsonData
-        } catch {
-            completion(.failure(error))
-            return
-        }
-        
-        // Отправляем запрос
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
-                completion(.failure(error))
-                return
-            }
+            request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+            print("Sending request to:", url)
             
-            // Проверяем наличие данных
-            guard let data = data, !data.isEmpty else {
-                let noDataError = NSError(domain: "DeepSeekAPI", code: 0, userInfo: [NSLocalizedDescriptionKey: "Пустой ответ от сервера"])
-                completion(.failure(noDataError))
-                return
-            }
-            
-            // Логирование данных (удалить в продакшне)
-            if let rawResponse = String(data: data, encoding: .utf8) {
-                print("Ответ DeepSeek API:", rawResponse)
-            }
-            
-            // Парсим JSON-ответ
-            do {
-                let decodedResponse = try JSONDecoder().decode(DeepseekCompletionResponse.self, from: data)
-                
-                guard let firstChoice = decodedResponse.choices.first else {
-                    let emptyError = NSError(domain: "DeepSeekAPI", code: 0, userInfo: [NSLocalizedDescriptionKey: "Ответ не содержит данных"])
-                    completion(.failure(emptyError))
+            URLSession.shared.dataTask(with: request) { data, response, error in
+                if let error = error {
+                    print("Network error:", error)
+                    completion(nil)
                     return
                 }
                 
-                completion(.success(firstChoice.message.content))
-            } catch {
-                completion(.failure(error))
+                guard let data = data else {
+                    print("No data received")
+                    completion(nil)
+                    return
+                }
+                
+                self.handleAPIResponse(data: data, completion: completion)
+                
+            }.resume()
+            
+        } catch {
+            print("Request creation error:", error)
+            completion(nil)
+        }
+    }
+    
+    /// Обрабатывает ответ от API
+    private func handleAPIResponse(data: Data, completion: @escaping ([DeepseekTask]?) -> Void) {
+        do {
+            // Парсим основной ответ API
+            if let apiResponse = try? JSONSerialization.jsonObject(with: data, options: []) {
+                print("API Response:", apiResponse)
             }
-        }.resume()
+            
+            // Декодируем ответ API
+            struct APIResponse: Codable {
+                struct Choice: Codable {
+                    struct Message: Codable {
+                        let content: String
+                    }
+                    let message: Message
+                }
+                let choices: [Choice]
+            }
+            
+            let response = try JSONDecoder().decode(APIResponse.self, from: data)
+            
+            guard let jsonString = response.choices.first?.message.content else {
+                print("No content in API response")
+                completion(nil)
+                return
+            }
+            
+            // Очищаем JSON от маркеров кода
+            let cleanJson = jsonString
+                .replacingOccurrences(of: "```json", with: "")
+                .replacingOccurrences(of: "```", with: "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            print("Clean JSON:", cleanJson)
+            
+            guard let taskData = cleanJson.data(using: .utf8) else {
+                print("Failed to convert JSON string to data")
+                completion(nil)
+                return
+            }
+            
+            // Декодируем задания
+            let tasksResponse = try JSONDecoder().decode(AITasksResponse.self, from: taskData)
+            let tasks = tasksResponse.tasks
+            
+            print("Successfully decoded \(tasks.count) tasks:")
+            tasks.forEach { task in
+                print("- Type: \(task.type)")
+                if let text = task.text { print("  Text: \(text)") }
+                if let pairs = task.pairs { print("  Pairs: \(pairs)") }
+                if let words = task.words { print("  Words: \(words)") }
+                if let question = task.question { print("  Question: \(question)") }
+                if let options = task.options { print("  Options: \(options)") }
+                if let answer = task.answer { print("  Answer: \(answer)") }
+            }
+            
+            // Преобразуем в DeepseekTask
+            let deepseekTasks = tasks.map { $0.toDeepseekTask() }
+            
+            // Проверяем все задания
+            guard !deepseekTasks.isEmpty else {
+                print("No tasks created")
+                completion(nil)
+                return
+            }
+            
+            guard deepseekTasks.count == 4 else {
+                print("Wrong number of tasks: \(deepseekTasks.count)")
+                completion(nil)
+                return
+            }
+            
+            completion(deepseekTasks)
+            
+        } catch {
+            print("Error processing API response:", error)
+            if let errorData = String(data: data, encoding: .utf8) {
+                print("Raw response:", errorData)
+            }
+            completion(nil)
+        }
     }
 }

@@ -12,34 +12,35 @@ struct DeepseekTask {
     let taskType: TaskType
     let text: String?
     let pairs: [(String, String)]?
+    let words: [String]?
+    let options: [String]?
+    let question: String?
+    let answer: String?
 }
 
 // MARK: - DTO для парсинга JSON от ИИ
-
-/// Пример: ИИ должен вернуть JSON вида:
-/// {
-///   "tasks": [
-///     {
-///       "type": "translation",
-///       "text": "Hello!"
-///     },
-///     {
-///       "type": "matchingPairs",
-///       "pairs": [["Cat", "Кошка"], ["Dog", "Собака"]]
-///     }
-///   ]
-/// }
-///
 struct AITasksResponse: Decodable {
     let tasks: [AITaskDTO]
 }
 
 /// Каждое задание в JSON-массиве
 struct AITaskDTO: Decodable {
-    let type: String       // "translation", "matchingPairs", etc.
+    let type: String
     let text: String?
     let pairs: [[String]]?
-    // При необходимости: let variants: [String]? // для multipleChoice
+    let words: [String]?
+    let options: [String]?
+    let question: String?
+    let answer: String?
+    
+    var validatedAnswer: String {
+        switch type.lowercased() {
+        case "matchingpairs":
+            return "" // Для matchingPairs ответ не нужен
+        default:
+            return answer ?? ""
+        }
+    }
 }
 
 // MARK: - Преобразование AITaskDTO -> DeepseekTask
@@ -68,7 +69,11 @@ extension AITaskDTO {
         return DeepseekTask(
             taskType: mappedType,
             text: self.text,
-            pairs: mappedPairs
+            pairs: mappedPairs,
+            words: self.words,
+            options: self.options,
+            question: self.question,
+            answer: self.validatedAnswer
         )
     }
 }
