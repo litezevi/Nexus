@@ -2,7 +2,7 @@
 //  DeepseekAPIService.swift
 //  NexusApp
 //
-//  Отвечает за общение с DeepSeek (Chat Completion).
+//  Отвечает за взаимодействие с DeepSeek API для генерации текстов.
 //
 
 import Foundation
@@ -10,28 +10,28 @@ import Foundation
 // MARK: - Структуры для запроса/ответа
 
 /// Сообщение для Chat Completion
-struct DeepseekChatMessage: Encodable {
+struct DeepseekChatMessage: Codable {
     let role: String    // "system" | "user" | "assistant"
     let content: String
 }
 
 /// Тело запроса POST /chat/completions
-struct DeepseekChatRequest: Encodable {
+struct DeepseekChatRequest: Codable {
     let model: String
     let messages: [DeepseekChatMessage]
     let stream: Bool?
 }
 
-/// Ответ от DeepSeek (аналог OpenAI)
-struct DeepseekCompletionResponse: Decodable {
+/// Ответ от DeepSeek API
+struct DeepseekCompletionResponse: Codable {
     let choices: [DeepseekChoice]
 }
 
-struct DeepseekChoice: Decodable {
+struct DeepseekChoice: Codable {
     let message: DeepseekMessage
 }
 
-struct DeepseekMessage: Decodable {
+struct DeepseekMessage: Codable {
     let role: String
     let content: String
 }
@@ -40,24 +40,23 @@ struct DeepseekMessage: Decodable {
 
 class DeepseekAPIService {
     
-    /// Запрашиваем Chat Completion у DeepSeek
+    /// Запрашивает Chat Completion у DeepSeek API
     ///
     /// - Parameters:
-    ///   - apiKey: Ваш API-ключ (Bearer ...)
-    ///   - baseURL: при необходимости (по умолчанию https://api.deepseek.com)
-    ///   - model: название модели ("deepseek-chat")
-    ///   - messages: массив (role + content)
-    ///   - completion: вернёт результат либо .success(строка-ответ), либо .failure(ошибка)
+    ///   - apiKey: API-ключ DeepSeek (формат "Bearer sk-...")
+    ///   - baseURL: URL API (по умолчанию "https://api.deepseek.com")
+    ///   - model: Название модели (по умолчанию "deepseek-chat")
+    ///   - messages: Массив сообщений в чате
+    ///   - completion: Возвращает результат: либо .success(ответ-строка), либо .failure(ошибка)
     static func fetchChatCompletion(
-        apiKey: String,
+        apiKey: String = "sk-4c88de14212c478abb0b641e280c4d6d",
         baseURL: String = "https://api.deepseek.com",
         model: String = "deepseek-chat",
         messages: [DeepseekChatMessage],
         completion: @escaping (Result<String, Error>) -> Void
     ) {
-        // Формируем URL: https://api.deepseek.com/chat/completions
-        guard let url = URL(string: baseURL + "/v3/chat/completions") else {
-            let urlError = NSError(domain: "DeepSeekAPI", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid base URL"])
+        guard let url = URL(string: "\(baseURL)/v3/chat/completions") else {
+            let urlError = NSError(domain: "DeepSeekAPI", code: 0, userInfo: [NSLocalizedDescriptionKey: "Неверный baseURL"])
             completion(.failure(urlError))
             return
         }
@@ -65,11 +64,11 @@ class DeepseekAPIService {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         
-        // Заголовки
+        // Устанавливаем заголовки
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        // Тело запроса
+        // Формируем тело запроса
         let requestBody = DeepseekChatRequest(
             model: model,
             messages: messages,
@@ -84,30 +83,36 @@ class DeepseekAPIService {
             return
         }
         
-        // Выполняем запрос
+        // Отправляем запрос
         URLSession.shared.dataTask(with: request) { data, response, error in
-            // Смотрим на ошибку сети
             if let error = error {
                 completion(.failure(error))
                 return
             }
-            guard let data = data else {
-                let noDataError = NSError(domain: "DeepSeekAPI", code: 0, userInfo: [NSLocalizedDescriptionKey: "No data"])
+            
+            // Проверяем наличие данных
+            guard let data = data, !data.isEmpty else {
+                let noDataError = NSError(domain: "DeepSeekAPI", code: 0, userInfo: [NSLocalizedDescriptionKey: "Пустой ответ от сервера"])
                 completion(.failure(noDataError))
                 return
             }
             
+            // Логирование данных (удалить в продакшне)
+            if let rawResponse = String(data: data, encoding: .utf8) {
+                print("Ответ DeepSeek API:", rawResponse)
+            }
+            
             // Парсим JSON-ответ
             do {
-                let decoded = try JSONDecoder().decode(DeepseekCompletionResponse.self, from: data)
+                let decodedResponse = try JSONDecoder().decode(DeepseekCompletionResponse.self, from: data)
                 
-                // Берём контент первого choice
-                if let firstChoice = decoded.choices.first {
-                    completion(.success(firstChoice.message.content))
-                } else {
-                    let emptyError = NSError(domain: "DeepSeekAPI", code: 0, userInfo: [NSLocalizedDescriptionKey: "Empty choices"])
+                guard let firstChoice = decodedResponse.choices.first else {
+                    let emptyError = NSError(domain: "DeepSeekAPI", code: 0, userInfo: [NSLocalizedDescriptionKey: "Ответ не содержит данных"])
                     completion(.failure(emptyError))
+                    return
                 }
+                
+                completion(.success(firstChoice.message.content))
             } catch {
                 completion(.failure(error))
             }

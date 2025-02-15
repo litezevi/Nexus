@@ -254,7 +254,7 @@ struct LessonView: View {
     }
     
     private func parseAIResponse(asJSON: String) {
-        var cleaned = asJSON
+        let cleaned = asJSON
             .replacingOccurrences(of: "```json", with: "")
             .replacingOccurrences(of: "```", with: "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
