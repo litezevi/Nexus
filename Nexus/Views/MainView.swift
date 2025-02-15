@@ -17,13 +17,14 @@ struct MainView: View {
                 HStack(spacing: 16) {
                     HStack(spacing: 8) {
                         Image(systemName: "flame.fill")
-                            .foregroundColor(.orange)
+                            .foregroundColor(.black)
                         Text("\(streak)")
                             .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(Color.lightGray)
                     }
                     
                     Capsule()
-                        .fill(isPremium ? Color.yellow : Color.gray)
+                        .fill(isPremium ? Color.mediumGray : Color.lightGray)
                         .frame(width: 80, height: 24)
                         .overlay(
                             Text(isPremium ? "PRO" : "FREE")
@@ -41,8 +42,14 @@ struct MainView: View {
                         Image(systemName: "person.crop.circle.fill")
                             .resizable()
                             .scaledToFit()
-                            .frame(width: 32, height: 32)
-                            .foregroundColor(.blue)
+                            .frame(width: 40, height: 40)
+                            .foregroundColor(.black)
+                            .background(
+                                Circle()
+                                    .fill(Color.lightGray)
+                                    .frame(width: 44, height: 44)
+                            )
+                            .offset(y: 4)
                     }
                 }
                 .padding()
@@ -59,7 +66,7 @@ struct MainView: View {
                         .trim(from: 0, to: 0.75)
                         .stroke(
                             LinearGradient(
-                                gradient: Gradient(colors: [.blue, .purple]),
+                                gradient: Gradient(colors: [.black, .black]),
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             ),
@@ -72,7 +79,7 @@ struct MainView: View {
                         ZStack {
                             Circle()
                                 .fill(LinearGradient(
-                                    gradient: Gradient(colors: [.blue, .purple]),
+                                    gradient: Gradient(colors: [Color.mediumGray, Color.darkGray]),
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing)
                                 )
@@ -98,7 +105,13 @@ struct MainView: View {
                 
                 Spacer()
             }
+            .background(Color.darkGray) // <-- исправленный код, фон добавляется здесь
+            .tint(.black)
             .navigationBarHidden(true)
         }
     }
+}
+
+#Preview {
+    MainView()
 }

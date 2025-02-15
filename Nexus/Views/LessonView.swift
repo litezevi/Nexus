@@ -1,6 +1,12 @@
 import SwiftUI
 import UIKit
 
+enum AnswerState {
+    case neutral
+    case correct
+    case incorrect
+}
+
 //  LessonView.swift
 //  NexusApp
 //
@@ -14,12 +20,13 @@ struct LessonView: View {
     @State private var isLoading: Bool = false
     @State private var errorMessage: String? = nil
     @State private var aiResponse: String = ""
+    @State private var answerState: AnswerState = .neutral
     
     let deepseekApiKey = "sk-1e5122c55d46401e8242ccd005a5d6da"
     
     var body: some View {
         ZStack {
-            Color(.systemBackground)
+            Color.darkGray
                 .edgesIgnoringSafeArea(.all)
             
             if isLoading {
@@ -53,12 +60,12 @@ struct LessonView: View {
         VStack {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 50))
-                .foregroundColor(.red)
+                .foregroundColor(.lightGray)
                 .padding()
             
             Text("Ошибка: \(error)")
                 .font(.headline)
-                .foregroundColor(.red)
+                .foregroundColor(Color(hex: "#E5E5E5"))
                 .multilineTextAlignment(.center)
                 .padding()
             
@@ -67,8 +74,9 @@ struct LessonView: View {
                     .font(.headline)
                     .padding()
                     .frame(maxWidth: .infinity)
-                    .background(Color.blue)
-                    .foregroundColor(.white)
+                    .background(Color(hex: "#2C2C2E"))
+                    .foregroundColor(Color(hex: "#E5E5E5"))
+                    .border(Color.black, width: 1)
                     .cornerRadius(10)
             }
             .padding()
@@ -120,9 +128,24 @@ struct LessonView: View {
             if currentTaskIndex < tasks.count {
                 let currentTask = tasks[currentTaskIndex]
                 
-                TaskViewFactory.makeView(for: currentTask)
+                ZStack {
+                    TaskViewFactory.makeView(for: currentTask)
+                    
+                    if answerState == .correct {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 50))
+                            .foregroundColor(.white)
+                            .transition(.scale)
+                    } else if answerState == .incorrect {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 50))
+                            .foregroundColor(.white)
+                            .transition(.scale)
+                    }
+                }
                     .padding()
-                    .background(Color(.secondarySystemBackground))
+                    .background(Color.mediumGray)
+                    .border(Color.black, width: 1)
                     .cornerRadius(15)
                     .shadow(radius: 5)
                     .transition(.slide)
@@ -149,8 +172,15 @@ struct LessonView: View {
                     Button(action: {
                         withAnimation {
                             if currentTaskIndex < tasks.count - 1 {
-                                currentTaskIndex += 1
+                                answerState = .correct
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        currentTaskIndex += 1
+                                        answerState = .neutral
+                                    }
+                                }
                             } else {
+                                answerState = .correct
                                 // Lesson completed
                             }
                         }
@@ -159,7 +189,7 @@ struct LessonView: View {
                             .font(.headline)
                             .padding()
                             .frame(maxWidth: .infinity)
-                            .background(Color.green)
+                            .background(Color.black)
                             .foregroundColor(.white)
                             .cornerRadius(10)
                     }
@@ -179,7 +209,7 @@ struct LessonView: View {
             Spacer()
             
             ProgressView(value: Double(currentTaskIndex + 1), total: Double(tasks.count))
-                .progressViewStyle(LinearProgressViewStyle())
+                .progressViewStyle(LinearProgressViewStyle(tint: .white))
                 .frame(width: 150)
         }
         .padding(.horizontal)

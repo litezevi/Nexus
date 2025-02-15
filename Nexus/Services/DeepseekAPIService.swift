@@ -56,7 +56,7 @@ class DeepseekAPIService {
         completion: @escaping (Result<String, Error>) -> Void
     ) {
         // Формируем URL: https://api.deepseek.com/chat/completions
-        guard let url = URL(string: baseURL + "/chat/completions") else {
+        guard let url = URL(string: baseURL + "/v3/chat/completions") else {
             let urlError = NSError(domain: "DeepSeekAPI", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid base URL"])
             completion(.failure(urlError))
             return
