@@ -37,8 +37,8 @@ struct SentenceBuildingView: View {
             
             // Область для перетаскивания слов
             LazyVGrid(columns: [
-                GridItem(.adaptive(minimum: 100, maximum: 200))
-            ], spacing: 10) {
+                GridItem(.adaptive(minimum: 80, maximum: .infinity), spacing: 12)
+            ], spacing: 16) {
                 ForEach(arrangedWords.indices, id: \.self) { index in
                     WordCardView(word: arrangedWords[index])
                         .onDrag {

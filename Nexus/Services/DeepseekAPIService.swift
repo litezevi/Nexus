@@ -12,8 +12,15 @@ private let EXAMPLE_TASK = """
 {
   "tasks": [
     {
-      "type": "translation",
+      "type": "multipleChoice",
+      "question": "Выберите правильный перевод:",
       "text": "The sun is shining today.",
+      "options": [
+        "Сегодня светит солнце.",
+        "Сегодня идет дождь.",
+        "Сегодня облачно.",
+        "Сегодня жарко."
+      ],
       "answer": "Сегодня светит солнце."
     },
     {
@@ -27,19 +34,20 @@ private let EXAMPLE_TASK = """
     },
     {
       "type": "sentenceBuilding",
-      "words": ["she", "likes", "to", "read", "books"],
-      "answer": "She likes to read books."
+      "words": ["The", "cat", "sleeps", "on", "the", "bed"],
+      "answer": "The cat sleeps on the bed"
     },
     {
       "type": "multipleChoice",
-      "question": "He is drinking coffee.",
+      "question": "Выберите правильный перевод:",
+      "text": "She is reading a book.",
       "options": [
-        "Он пьёт кофе.",
-        "Он пьёт чай.",
-        "Он ест завтрак.",
-        "Он читает газету."
+        "Она читает книгу.",
+        "Она пишет письмо.",
+        "Она смотрит телевизор.",
+        "Она слушает музыку."
       ],
-      "answer": "Он пьёт кофе."
+      "answer": "Она читает книгу."
     }
   ]
 }
@@ -49,11 +57,24 @@ class DeepseekAPIService {
     
     /// Запрашивает задания у DeepSeek API
     func fetchLessonTasks(completion: @escaping ([DeepseekTask]?) -> Void) {
-        let systemPrompt = "Создай точно такие же задания как в примере, только с другими фразами:\n\n\(EXAMPLE_TASK)"
+        let systemPrompt = """
+        Ты — AI, создающий задания по английскому языку для приложения.
+        Твоя задача — создать 4 разных типа заданий без ручного ввода текста.
+
+        Требования к заданиям:
+        1. Только выбор из вариантов (Multiple Choice, Matching Pairs, Sentence Building).
+        2. Никакого ручного ввода текста!
+        3. Варианты ответов должны быть логичными и запутывающими.
+        4. В заданиях с множественным выбором обязательно используй "question" с текстом "Выберите правильный перевод:".
+        5. В Sentence Building используй короткие слова, которые легко разместятся на экране.
+        6. Все задания должны следовать точному формату из примера.
+
+        Пример формата JSON:\n\n\(EXAMPLE_TASK)
+        """
         
         let messages: [[String: String]] = [
             ["role": "system", "content": systemPrompt],
-            ["role": "user", "content": "Создай новые задания точно в таком же формате как в примере."]
+            ["role": "user", "content": "Создай новый набор из 4 заданий точно в таком же формате."]
         ]
         
         let requestBody: [String: Any] = [
